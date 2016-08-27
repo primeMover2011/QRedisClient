@@ -20,19 +20,19 @@ void QRedisProtocolToken::parse(const QByteArray &tokenData)
 {
     switch (this->m_type)
     {
-        case QRedisProtocolToken::TokenType::TYPE_STRING:
+        case QRedisTokenType::TKN_TYPE_STRING:
             this->extractString(tokenData);
             return;
-        case QRedisProtocolToken::TokenType::TYPE_INT:
+        case QRedisTokenType::TKN_TYPE_INT:
             this->extractInt(tokenData);
             return;
-        case QRedisProtocolToken::TokenType::TYPE_BYTES:
+        case QRedisTokenType::TKN_TYPE_BYTES:
             this->extractBytes(tokenData);
             return;
-        case QRedisProtocolToken::TokenType::TYPE_ARRAY:
+        case QRedisTokenType::TKN_TYPE_ARRAY:
             this->extractArray(tokenData);
             return;
-        case QRedisProtocolToken::TokenType::TYPE_ERROR:
+        case QRedisTokenType::TKN_TYPE_ERROR:
             this->extractError(tokenData);
             return;
         default:
@@ -158,19 +158,17 @@ void QRedisProtocolToken::extractError(const QByteArray &tokenData)
 
 QString QRedisProtocolToken::toString() const
 {
-    Q_ASSERT(this->m_type == QRedisProtocolToken::TokenType::TYPE_STRING);
     return QString(this->m_bytes);
 }
 
 QByteArray QRedisProtocolToken::toBytes() const
 {
-    Q_ASSERT(this->m_type == QRedisProtocolToken::TokenType::TYPE_BYTES);
     return this->m_bytes;
 }
 
 qint64 QRedisProtocolToken::toInt64() const
 {
-    Q_ASSERT(this->m_type == QRedisProtocolToken::TokenType::TYPE_INT);
+    Q_ASSERT(this->m_type == QRedisTokenType::TKN_TYPE_INT);
     Q_ASSERT(!this->m_bytes.isEmpty());
 
     bool canConvert = false;
@@ -192,7 +190,7 @@ bool QRedisProtocolToken::toSuccess() const
 
 QRedisTokenList QRedisProtocolToken::toTokenList() const
 {
-    Q_ASSERT(this->m_type == QRedisProtocolToken::TokenType::TYPE_ARRAY);
+    Q_ASSERT(this->m_type == QRedisTokenType::TKN_TYPE_ARRAY);
     Q_ASSERT(!this->m_bytes.isEmpty());
 
     qint32 idxCr = m_bytes.indexOf(QChar::LineFeed);
@@ -229,7 +227,7 @@ QRedisClientError QRedisProtocolToken::toError() const
 
 QRedisList QRedisProtocolToken::toList() const
 {
-    Q_ASSERT(this->m_type == TokenType::TYPE_ARRAY);
+    Q_ASSERT(this->m_type == QRedisTokenType::TKN_TYPE_ARRAY);
 
     QRedisTokenList tokenList = this->toTokenList();
     QRedisList list;
@@ -244,7 +242,7 @@ QRedisList QRedisProtocolToken::toList() const
 
 QRedisSortedSet QRedisProtocolToken::toSortedSet() const
 {
-    Q_ASSERT(this->m_type == TokenType::TYPE_ARRAY);
+    Q_ASSERT(this->m_type == QRedisTokenType::TKN_TYPE_ARRAY);
     QRedisTokenList tokenList = this->toTokenList();
 
     qint32 tokenListLength = tokenList.length();
@@ -266,7 +264,7 @@ QRedisSortedSet QRedisProtocolToken::toSortedSet() const
 
 QRedisSet QRedisProtocolToken::toSet() const
 {
-    Q_ASSERT(this->m_type == TokenType::TYPE_ARRAY);
+    Q_ASSERT(this->m_type == QRedisTokenType::TKN_TYPE_ARRAY);
     QRedisTokenList tokenList = this->toTokenList();
 
     QRedisSet set;
@@ -281,7 +279,7 @@ QRedisSet QRedisProtocolToken::toSet() const
 
 QRedisHash QRedisProtocolToken::toHash() const
 {
-    Q_ASSERT(this->m_type == TokenType::TYPE_ARRAY);
+    Q_ASSERT(this->m_type == QRedisTokenType::TKN_TYPE_ARRAY);
     QRedisTokenList tokenList = this->toTokenList();
 
     qint32 tokenListLength = tokenList.length();
@@ -302,23 +300,23 @@ QRedisHash QRedisProtocolToken::toHash() const
 }
 
 // Methods
-QRedisProtocolToken::TokenType QRedisProtocolToken::getType(char firstByte)
+QRedisTokenType QRedisProtocolToken::getType(char firstByte)
 {
     switch (firstByte)
     {
         case '+':
-            return QRedisProtocolToken::TokenType::TYPE_STRING;
+            return QRedisTokenType::TKN_TYPE_STRING;
         case '-':
-            return QRedisProtocolToken::TokenType::TYPE_ERROR;
+            return QRedisTokenType::TKN_TYPE_ERROR;
         case ':':
-            return QRedisProtocolToken::TokenType::TYPE_INT;
+            return QRedisTokenType::TKN_TYPE_INT;
         case '$':
-            return QRedisProtocolToken::TokenType::TYPE_BYTES;
+            return QRedisTokenType::TKN_TYPE_BYTES;
         case '*':
-            return QRedisProtocolToken::TokenType::TYPE_ARRAY;
+            return QRedisTokenType::TKN_TYPE_ARRAY;
         default:
             Q_ASSERT("Shouldn't have gotten here!");
-            return QRedisProtocolToken::TokenType::TYPE_UNKNOWN;
+            return QRedisTokenType::TKN_TYPE_UNKNOWN;
     }
 }
 

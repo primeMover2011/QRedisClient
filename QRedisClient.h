@@ -8,9 +8,9 @@
 #include "QRedisClientRequest.h"
 #include "QRedisClientReply.h"
 #include "QRedisClientConstants.h"
+#include "QRedisClientScript.h"
 //
 class QRedisProtocolToken;
-//
 
 class QRedisClient : public QObject
 {
@@ -21,6 +21,9 @@ public:
     void connectToServer(const QHostAddress &address, quint16 port = 6379);
 
     void sendRequest(QRedisClientRequest& request);
+
+    void registerScript(const QRedisClientScript &script);
+
 
 
 private:

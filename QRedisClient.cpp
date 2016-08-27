@@ -25,8 +25,12 @@ void QRedisClient::sendRequest(QRedisClientRequest& request)
     Q_ASSERT(requestData.length() > 0);
     this->m_replies.append(request);
     this->m_socket->write(requestData);
+}
 
-    qDebug() << requestData;
+void QRedisClient::registerScript(const QRedisClientScript& script)
+{
+
+
 }
 
 void QRedisClient::scanForTokens()

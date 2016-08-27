@@ -14,37 +14,12 @@ QRedisClientReply::QRedisClientReply(const QRedisClientRequest &request) :
 
 }
 
-QString QRedisClientReply::toString() const
-{
-    return this->m_tokens.first().toString();
-}
-
-QByteArray QRedisClientReply::toBytes() const
-{
-    return this->m_tokens.first().toBytes();
-}
-
-bool QRedisClientReply::toBool() const
-{
-    return this->m_tokens.first().toBool();
-}
-
-qint64 QRedisClientReply::toInt64() const
-{
-    return this->m_tokens.first().toInt64();
-}
-
-QRedisClientError QRedisClientReply::toError() const
-{
-    return this->m_tokens.first().toError();
-}
-
 void QRedisClientReply::addToken(const QRedisProtocolToken& token)
 {
     this->m_tokens.append(token);
     if (this->m_tokens.length() >= 2)
     {
-        this->m_dataType = DataType::TYPE_ARRAY_REPLY;
+        this->m_type = QRedisType::TYPE_ARRAY_REPLY;
     }
 }
 
@@ -56,12 +31,14 @@ QRedisClientError QRedisClientReply::error() const
 bool QRedisClientReply::success() const
 {
     Q_ASSERT(this->m_tokens.length() == 1);
+    Q_ASSERT(this->m_type != QRedisType::TYPE_ARRAY_REPLY);
+
     return this->m_tokens.first().toSuccess();
 }
 
-QRedisClientReply::DataType QRedisClientReply::dataType() const
+QRedisType QRedisClientReply::type() const
 {
-    return m_dataType;
+    return m_type;
 }
 
 QRedisClientRequest QRedisClientReply::request() const
@@ -72,6 +49,12 @@ QRedisClientRequest QRedisClientReply::request() const
 QVector<QRedisProtocolToken> QRedisClientReply::tokens() const
 {
     return m_tokens;
+}
+
+const QRedisProtocolToken& QRedisClientReply::firstToken() const
+{
+    Q_ASSERT(!this->m_tokens.isEmpty());
+    return this->m_tokens.first();
 }
 
 bool QRedisClientReply::isComplete() const

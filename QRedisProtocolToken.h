@@ -11,16 +11,6 @@
 class QRedisProtocolToken
 {
 public:
-    enum TokenType
-    {
-        TYPE_STRING,
-        TYPE_ERROR,
-        TYPE_INT,
-        TYPE_BYTES,
-        TYPE_ARRAY,
-        TYPE_UNKNOWN
-    };
-
     QRedisProtocolToken();
     QRedisProtocolToken(const QByteArray &tokenData);
 
@@ -39,23 +29,20 @@ public:
     QRedisSet toSet() const;
     QRedisHash toHash() const;
 
-    // Convrt to hash, list, sorted set, set,
-
     bool isNull() const;
     bool isValid() const;
     qint32 byteLength() const;
 
-
 private:
     // iVars
     QByteArray m_bytes;
-    QRedisProtocolToken::TokenType m_type;
-    qint32 m_byteLength;
-    bool m_isNull = false;
-    bool m_isValid = false;
+    QRedisTokenType m_type  = QRedisTokenType::TKN_TYPE_UNKNOWN;
+    qint32 m_byteLength     = 0;
+    bool m_isNull           = false;
+    bool m_isValid          = false;
 
     // Methods
-    QRedisProtocolToken::TokenType getType(char firstByte);
+    QRedisTokenType getType(char firstByte);
     void parse(const QByteArray &tokenData);
 
     void extractString(const QByteArray &tokenData);

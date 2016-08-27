@@ -15,7 +15,6 @@ public:
     // Operators
     bool operator == (const QRedisClientRequest &other) const;
 
-
     // List
     QRedisClientRequest& llen(const QString& key);
     QRedisClientRequest& lindex(const QString& key, qint64 index);
@@ -30,22 +29,22 @@ public:
     QRedisClientRequest& ltrim(const QString& key, qint64 start, qint64 stop);
 
     QRedisClientRequest& blpop(const QString& key, qint64 timeout);
-    QRedisClientRequest& blpop(const QStringList& keys, qint64 timeout);
+    QRedisClientRequest& blpop(const QVector<QString>& keys, qint64 timeout);
     QRedisClientRequest& brpop(const QString& key, qint64 timeout);
-    QRedisClientRequest& brpop(const QStringList& keys, qint64 timeout);
+    QRedisClientRequest& brpop(const QVector<QString>& keys, qint64 timeout);
     QRedisClientRequest& rpop(const QString& key);
     QRedisClientRequest& rpoplpush(const QString& source, const QString &dest);
     QRedisClientRequest& rpush(const QString& key, const QString& value);
-    QRedisClientRequest& rpush(const QString& key, const QStringList& values);
+    QRedisClientRequest& rpush(const QString& key, const QVector<QString>& values);
     QRedisClientRequest& rpushx(const QString& key, const QString& value);
 
     QByteArray serialize();
-    qint64 length() const;
+    qint64 byteLength() const;
 
 private:
-    QVector<QString> m_commandList;
-    qint64 m_length = 0;
-    QVector<QString> commandList() const;
+    QVector<QByteArray> m_commandList;
+    qint64 m_byteLength = 0;
+    QVector<QByteArray> commandList() const;
 
 
 
