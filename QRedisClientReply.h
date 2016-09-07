@@ -20,15 +20,20 @@ public:
     QRedisClientReply();
     QRedisClientReply(const QRedisClientRequest &request);
 
+    // Operators
+    bool operator == (const QRedisClientReply &other) const;
+    bool operator != (const QRedisClientReply &other) const;
+
     QRedisClientError error() const;
     bool success() const;
     QRedisType type() const;
 
     QRedisClientRequest request() const;
 
-    QVector<QRedisProtocolToken> tokens() const;
+    QVector<QRedisProtocolToken>& tokens();
 
     const QRedisProtocolToken& firstToken() const;
+    const QRedisProtocolToken& tokenAtIndex(quint32 index) const;
 
 
 private:

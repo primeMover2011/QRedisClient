@@ -14,6 +14,7 @@ public:
 
     // Operators
     bool operator == (const QRedisClientRequest &other) const;
+    bool operator != (const QRedisClientRequest &other) const;
 
     // List
     QRedisClientRequest& llen(const QString& key);
@@ -38,13 +39,44 @@ public:
     QRedisClientRequest& rpush(const QString& key, const QVector<QString>& values);
     QRedisClientRequest& rpushx(const QString& key, const QString& value);
 
+    // Scripts
+    QRedisClientRequest& eval(const QByteArray &script,
+                              const QVector<QString> &keys = QVector<QString>(),
+                              const QVector<QString> &args = QVector<QString>());
+
+
+    QRedisClientRequest& evalSha(const QByteArray &sha1,
+                                 const QVector<QByteArray> &keys = QVector<QByteArray>(),
+                                 const QVector<QByteArray> &args = QVector<QByteArray>());
+
+
+
+
+
+    QRedisClientRequest& scriptLoad(const QByteArray &script);
+
+
+    // Server
+    QRedisClientRequest& time();
+    QRedisClientRequest& clientSetName(const QString &name);
+
     QByteArray serialize();
     qint64 byteLength() const;
 
 private:
+    // iVars
     QVector<QByteArray> m_commandList;
     qint64 m_byteLength = 0;
+    bool m_isInternal = false;
+
+    // Getters
     QVector<QByteArray> commandList() const;
+    bool isInternal() const;
+    QRedisClientRequest& setIsInternal(bool isInternal);
+
+    // Internal DB Methods
+    QRedisClientRequest& select(quint8 dbIndex);
+
 
 
 

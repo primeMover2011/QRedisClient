@@ -104,14 +104,10 @@ void QRedisProtocolToken::extractBytes(const QByteArray &tokenData)
 
 void QRedisProtocolToken::extractArray(const QByteArray &tokenData)
 {
-    //"*2\r\n
-    // $3\r\nfoo\r\n
-    // $3\r\nbar\r\n"
-
-    qint32 idxCr = tokenData.indexOf(QChar::LineFeed);
+    qint32 ifxLf = tokenData.indexOf(QChar::LineFeed);
 
     bool canConvert = false;
-    qint64 elementCount = tokenData.mid(1, idxCr - 2).toLongLong(&canConvert);
+    qint64 elementCount = tokenData.mid(1, ifxLf - 2).toLongLong(&canConvert);
     Q_ASSERT(canConvert);
 
     if (elementCount == 0 && tokenData.left(4) == QByteArrayLiteral("*0\r\n"))
@@ -122,21 +118,22 @@ void QRedisProtocolToken::extractArray(const QByteArray &tokenData)
         return;
     }
 
-    qint32 arrLength = 1 +             // *
-                       (idxCr - 2) +   // Length of element length
-                       2;              // \r\n
+    qint32 readPos = 1 +            // *
+                     (ifxLf - 2) +  // Length of element length;
+                     2;             // \r\n
 
-    // Calculate the length of the array
-    // based on the total size of all tokens
-    // in it.
     for (int i = 0; i < elementCount; i++)
     {
-        qint32 tknLength = QRedisProtocolToken(tokenData.mid(idxCr + 1)).byteLength();
-        arrLength += tknLength;
+        QRedisProtocolToken cToken = QRedisProtocolToken(tokenData.mid(readPos));
+        Q_ASSERT(cToken.isValid());
+
+        qint32 tknLength = cToken.byteLength();
+        readPos += tknLength;
     }
 
-    this->m_bytes   = tokenData.left(arrLength);
-    this->m_byteLength  = arrLength;
+    this->m_byteLength  = readPos;
+    this->m_bytes       = tokenData.left(readPos);
+
     if (tokenData.length() >= this->m_byteLength) { this->m_isValid = true; }
 }
 
@@ -149,10 +146,11 @@ void QRedisProtocolToken::extractError(const QByteArray &tokenData)
     qint32 idxCr    = tokenData.indexOf(QChar::CarriageReturn);
 
     this->m_bytes.append(tokenData.mid(1, idxSpace - 1))
-            .append(';')
+            .append('^')
             .append(tokenData.mid(idxSpace +1, idxCr - idxSpace  -1));
 
     this->m_byteLength = idxCr + 2;
+
     if (tokenData.length() >= this->m_byteLength) { this->m_isValid = true; }
 }
 
@@ -168,7 +166,6 @@ QByteArray QRedisProtocolToken::toBytes() const
 
 qint64 QRedisProtocolToken::toInt64() const
 {
-    Q_ASSERT(this->m_type == QRedisTokenType::TKN_TYPE_INT);
     Q_ASSERT(!this->m_bytes.isEmpty());
 
     bool canConvert = false;
@@ -181,11 +178,6 @@ qint64 QRedisProtocolToken::toInt64() const
 bool QRedisProtocolToken::toBool() const
 {
     return static_cast<bool>(this->toInt64());
-}
-
-bool QRedisProtocolToken::toSuccess() const
-{
-    return (this->toString() == QStringLiteral("OK"));
 }
 
 QRedisTokenList QRedisProtocolToken::toTokenList() const
@@ -219,7 +211,7 @@ QRedisTokenList QRedisProtocolToken::toTokenList() const
 QRedisClientError QRedisProtocolToken::toError() const
 {
     QRedisClientError error;
-    qint32 idxSep = this->m_bytes.indexOf(';');
+    qint32 idxSep = this->m_bytes.indexOf('^');
     error.m_string = this->m_bytes.mid(idxSep + 1);
     error.setErrorCode(this->m_bytes.left(idxSep));
     return error;
@@ -299,6 +291,11 @@ QRedisHash QRedisProtocolToken::toHash() const
     return hash;
 }
 
+bool QRedisProtocolToken::isOk() const
+{
+    return (this->m_bytes == QStringLiteral("OK"));
+}
+
 // Methods
 QRedisTokenType QRedisProtocolToken::getType(char firstByte)
 {
@@ -324,6 +321,11 @@ QRedisTokenType QRedisProtocolToken::getType(char firstByte)
 qint32 QRedisProtocolToken::byteLength() const
 {
     return m_byteLength;
+}
+
+QRedisTokenType QRedisProtocolToken::type() const
+{
+    return this->m_type;
 }
 
 bool QRedisProtocolToken::isNull() const

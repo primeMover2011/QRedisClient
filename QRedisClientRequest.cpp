@@ -10,12 +10,18 @@ QRedisClientRequest::QRedisClientRequest()
 
 }
 
-bool QRedisClientRequest::operator ==(const QRedisClientRequest& other) const
+bool QRedisClientRequest::operator == (const QRedisClientRequest& other) const
 {
     if (this->m_commandList != other.m_commandList) { return false; }
     if (this->m_byteLength != other.m_byteLength)   { return false; }
+    if (this->m_isInternal != other.m_isInternal)   { return false; }
 
     return true;
+}
+
+bool QRedisClientRequest::operator != (const QRedisClientRequest& other) const
+{
+    return !(*this == other);
 }
 
 QRedisClientRequest& QRedisClientRequest::llen(const QString& key)
@@ -47,7 +53,7 @@ QRedisClientRequest&QRedisClientRequest::linsert(const QString& key, bool before
                                                                            pivot.toUtf8(),
                                                                            value.toUtf8()
                                                                        }));
-        return *this;
+    return *this;
 }
 
 QRedisClientRequest&QRedisClientRequest::lpop(const QString& key)
@@ -143,7 +149,7 @@ QRedisClientRequest&QRedisClientRequest::blpop(const QVector<QString>& keys, qin
 {
     this->m_commandList.append(QRedisClientUtils::toArrayOfBulkStrings(QVector<QByteArray> {
                                                                            QByteArrayLiteral("BLPOP"),
-                                                                           QRedisClientUtils::flatten(keys),
+                                                                           QRedisClientUtils::flattenStr(keys).toUtf8(),
                                                                            QByteArray::number(timeout)
                                                                        }));
     return *this;
@@ -163,7 +169,7 @@ QRedisClientRequest&QRedisClientRequest::brpop(const QVector<QString>& keys, qin
 {
     this->m_commandList.append(QRedisClientUtils::toArrayOfBulkStrings(QVector<QByteArray> {
                                                                            QByteArrayLiteral("BRPOP"),
-                                                                           QRedisClientUtils::flatten(keys),
+                                                                           QRedisClientUtils::flattenStr(keys).toUtf8(),
                                                                            QByteArray::number(timeout)
                                                                        }));
     return *this;
@@ -203,7 +209,7 @@ QRedisClientRequest& QRedisClientRequest::rpush(const QString& key, const QVecto
     this->m_commandList.append(QRedisClientUtils::toArrayOfBulkStrings(QVector<QByteArray> {
                                                                            QByteArrayLiteral("RPUSH"),
                                                                            key.toUtf8(),
-                                                                           QRedisClientUtils::flatten(values)
+                                                                           QRedisClientUtils::flattenStr(values).toUtf8()
                                                                        }));
     return *this;
 }
@@ -214,6 +220,83 @@ QRedisClientRequest& QRedisClientRequest::rpushx(const QString& key, const QStri
                                                                            QByteArrayLiteral("RPUSHX"),
                                                                            key.toUtf8(),
                                                                            value.toUtf8()
+                                                                       }));
+    return *this;
+}
+
+QRedisClientRequest&QRedisClientRequest::eval(const QByteArray& script, const QVector<QString>& keys, const QVector<QString>& args)
+{
+    Q_ASSERT(!script.isEmpty());
+
+    QVector<QByteArray> cmd
+    {
+        QByteArrayLiteral("EVAL"),
+        script,
+        QByteArray::number(keys.length())
+    };
+
+    for (const QString &cKey : keys) { cmd.append(cKey.toUtf8()); }
+    for (const QString &cArg : args) { cmd.append(cArg.toUtf8()); }
+
+    this->m_commandList.append(QRedisClientUtils::toArrayOfBulkStrings(cmd));
+    return *this;
+}
+
+QRedisClientRequest&QRedisClientRequest::evalSha(const QByteArray& sha1, const QVector<QByteArray>& keys, const QVector<QByteArray>& args)
+{
+    //EVALSHA sha1 numkeys key [key ...] arg [arg ...]
+
+    QVector<QByteArray> cmd
+    {
+        QByteArrayLiteral("EVALSHA"),
+        sha1,
+        QByteArray::number(keys.length())
+    };
+
+    for (const QString &cKey : keys) { cmd.append(cKey.toUtf8()); }
+    for (const QString &cArg : args) { cmd.append(cArg.toUtf8()); }
+
+    this->m_commandList.append(QRedisClientUtils::toArrayOfBulkStrings(cmd));
+    return *this;
+}
+
+QRedisClientRequest&QRedisClientRequest::scriptLoad(const QByteArray& script)
+{
+    this->m_commandList.append(QRedisClientUtils::toArrayOfBulkStrings(QVector<QByteArray>
+    {
+        QByteArrayLiteral("SCRIPT"),
+        QByteArrayLiteral("LOAD"),
+        script
+    }));
+
+    return *this;
+}
+
+QRedisClientRequest& QRedisClientRequest::time()
+{
+    this->m_commandList.append(QRedisClientUtils::toArrayOfBulkStrings(QVector<QByteArray> {
+                                                                           QByteArrayLiteral("TIME")
+                                                                       }));
+
+    return *this;
+}
+
+QRedisClientRequest&QRedisClientRequest::clientSetName(const QString& name)
+{
+    this->m_commandList.append(QRedisClientUtils::toArrayOfBulkStrings(QVector<QByteArray> {
+                                                                           QByteArrayLiteral("CLIENT"),
+                                                                           QByteArrayLiteral("SETNAME"),
+                                                                           name.toUtf8()
+                                                                       }));
+
+    return *this;
+}
+
+QRedisClientRequest& QRedisClientRequest::select(quint8 dbIndex)
+{
+    this->m_commandList.append(QRedisClientUtils::toArrayOfBulkStrings(QVector<QByteArray> {
+                                                                           QByteArrayLiteral("SELECT"),
+                                                                           QByteArray::number(dbIndex)
                                                                        }));
     return *this;
 }
@@ -275,35 +358,7 @@ QRedisClientRequest& QRedisClientRequest::rpushx(const QString& key, const QStri
 
 QByteArray QRedisClientRequest::serialize()
 {
-    QByteArray bytes;
-
-    // *2\r\n
-    //    $4\r\nLLEN\r\n
-    //    $6\r\nmylist\r\n
-    qint64 cmdLength = this->m_commandList.length();
-
-    Q_ASSERT(cmdLength > 0);
-
-    for (int i = 0; i < cmdLength; i++)
-    {
-        QString cString = this->m_commandList.at(i);
-        QVector<QStringRef> sep = cString.splitRef(QChar::Space);
-
-        bytes.append("*");
-        bytes.append(QByteArray::number(sep.length()));
-        bytes.append(kCRLF);
-
-        for (int j = 0; j < sep.length(); j++)
-        {
-            QStringRef cSep = sep.at(j);
-            bytes.append("$");
-            bytes.append(QByteArray::number(cSep.length()));
-            bytes.append(kCRLF);
-            bytes.append(cSep.toString());
-            bytes.append(kCRLF);
-        }
-    }
-
+    QByteArray bytes = QRedisClientUtils::flatten(this->m_commandList, false);
     this->m_byteLength = bytes.length();
     return bytes;
 }
@@ -311,6 +366,17 @@ QByteArray QRedisClientRequest::serialize()
 QVector<QByteArray> QRedisClientRequest::commandList() const
 {
     return m_commandList;
+}
+
+QRedisClientRequest& QRedisClientRequest::setIsInternal(bool isInternal)
+{
+    m_isInternal = isInternal;
+    return *this;
+}
+
+bool QRedisClientRequest::isInternal() const
+{
+    return m_isInternal;
 }
 
 qint64 QRedisClientRequest::byteLength() const

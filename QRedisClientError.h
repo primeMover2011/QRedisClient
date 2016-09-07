@@ -12,6 +12,7 @@ public:
     {
         ERR_NONE,
         ERR_WRONGTYPE,
+        ERR_GENERIC,
         ERR_UNKNOWN
     };
 
@@ -24,7 +25,7 @@ public:
 
 private:
     QString m_string;
-    QRedisClientError::Code m_code = QRedisClientError::Code::ERR_UNKNOWN;
+    QRedisClientError::Code m_code = QRedisClientError::Code::ERR_GENERIC;
 
     void setErrorCode(const QByteArray &errorCodeString);
 

@@ -8,21 +8,31 @@ QRedisClientUtils::QRedisClientUtils()
 
 }
 
-QByteArray QRedisClientUtils::flatten(const QVector<QString>& strings)
+QString QRedisClientUtils::flattenStr(const QVector<QString>& strings, bool spaced)
+{
+    QString str;
+
+    qint32 strLen = strings.length();
+
+    for (qint32 i = 0; i < strLen; i++)
+    {
+        str.append(strings.at(i));
+        if ((i + 1) != strLen && spaced) { str.append(QChar::Space); }
+    }
+
+    return str;
+}
+
+QByteArray QRedisClientUtils::flatten(const QVector<QByteArray>& strings, bool spaced)
 {
     QByteArray bytes;
 
+    qint32 strLen = strings.length();
 
-    qint32 bLen = strings.length();
-
-    for (qint32 i = 0; i < bLen; i++)
+    for (qint32 i = 0; i < strLen; i++)
     {
-        const QString &cStr = strings.at(i);
-        bytes.append(cStr);
-        if ((i + 1) != bLen)
-        {
-            bytes.append(QChar::Space);
-        }
+        bytes.append(strings.at(i));
+        if ((i + 1) != strLen && spaced) { bytes.append(QChar::Space); }
     }
 
     return bytes;
@@ -30,10 +40,8 @@ QByteArray QRedisClientUtils::flatten(const QVector<QString>& strings)
 
 QByteArray QRedisClientUtils::makeBulkString(const QByteArray& data)
 {
-    QByteArray bytes;
-
-    bytes.append(QByteArrayLiteral("$"))
-            .append(QByteArray::number(data.length()))
+    QByteArray bytes = QByteArrayLiteral("$");
+    bytes.append(QByteArray::number(data.length()))
             .append(kCRLF)
             .append(data)
             .append(kCRLF);
@@ -44,11 +52,24 @@ QByteArray QRedisClientUtils::makeBulkString(const QByteArray& data)
 QByteArray QRedisClientUtils::toArrayOfBulkStrings(const QVector<QByteArray> &data)
 {
     QByteArray bytes = QByteArrayLiteral("*");
-    bytes.append(QByteArray::number(data.length())).append(kCRLF);
+    bytes.append(QByteArray::number(data.length())) .append(kCRLF);
 
     for (const QByteArray &cData : data)
     {
         bytes.append(QRedisClientUtils::makeBulkString(cData));
+    }
+
+    return bytes;
+}
+
+QByteArray QRedisClientUtils::toArrayOfBulkStrings(const QVector<QString> &strings)
+{
+    QByteArray bytes = QByteArrayLiteral("*");
+    bytes.append(QByteArray::number(strings.length())) .append(kCRLF);
+
+    for (const QString &cString : strings)
+    {
+        bytes.append(QRedisClientUtils::makeBulkString(cString.toUtf8()));
     }
 
     return bytes;

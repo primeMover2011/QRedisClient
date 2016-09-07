@@ -17,6 +17,9 @@ A cross platform driver for Redis written entirely in Qt/C++ with no funky depen
 - development. Some of them
 - could be good though. :)
 
+# // TODO :)
+- Multi connection broker.
+- Threading
 
 # FAQ
 

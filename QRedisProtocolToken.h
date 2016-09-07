@@ -19,7 +19,6 @@ public:
     QByteArray toBytes() const;
     qint64 toInt64() const;
     bool toBool() const;
-    bool toSuccess() const;
     QRedisTokenList toTokenList() const;
     QRedisClientError toError() const;
 
@@ -29,9 +28,11 @@ public:
     QRedisSet toSet() const;
     QRedisHash toHash() const;
 
+    bool isOk() const;
     bool isNull() const;
     bool isValid() const;
     qint32 byteLength() const;
+    QRedisTokenType type() const;
 
 private:
     // iVars
